@@ -15,7 +15,7 @@ contract DEX {
     }
 
     modifier onlyOwner { 
-        require(msg.sender == owner, "you are not the owner");
+        require(msg.sender == owner, "You are not the owner");
         _;
     }
 
@@ -28,7 +28,7 @@ contract DEX {
     }
 
     function withdrawTokens() external onlyOwner {
-        uint balance = associatedToken.balanceOf(address(this));
+        uint balance = getTokenBalance();
         associatedToken.transfer(msg.sender, balance);
     }
 
@@ -37,19 +37,20 @@ contract DEX {
         require(sent);
     }
 
-    function getPrice(uint number) public view returns (uint) {
-        return numTokens * price;
-    }
-
     function buy(uint numTokens) external payable {
         require(numTokens <= getTokenBalance(), "not enough tokens");
-        uint priceForTokens = getPrice(bumTokens);
+        uint priceForTokens = getPrice(numTokens);
 
         require(msg.value == priceForTokens, "invalid value sent");
         associatedToken.transfer(msg.sender, numTokens);
     }
 
+    //utility functions
     function getTokenBalance() public view returns (uint) {
         return associatedToken.balanceOf(address(this));
+    }
+
+    function getPrice(uint numTokens) public view returns (uint) {
+        return numTokens * price;
     }
 }
