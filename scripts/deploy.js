@@ -5,23 +5,33 @@
 // will compile your contracts, add the Hardhat Runtime Environment's members to the
 // global scope, and execute the script.
 const hre = require("hardhat");
+const fs = require("fs/promises");
 
 async function main() {
-  const currentTimestampInSeconds = Math.round(Date.now() / 1000);
-  const unlockTime = currentTimestampInSeconds + 60;
+  const Token = await hre.ethers.getContractFactory("Token");
+  const token = await Token.deploy("100");
 
-  const lockedAmount = hre.ethers.utils.parseEther("0.001");
+  const DEX = await hre.ethers.getContractFactory("DEX");
+  const dex = await DEX.deploy(token.address, 100);
 
-  const Lock = await hre.ethers.getContractFactory("Lock");
-  const lock = await Lock.deploy(unlockTime, { value: lockedAmount });
+  await token.deployed();
+  await dex.deployed();
+  await writeDeploymentInfo(token, "token.json");
+  await writeDeploymentInfo(dex, "dex.json");
+}
 
-  await lock.deployed();
+async function writeDeploymentInfo(contract, filename = "") {
+  const data = {
+    network: hre.network.name,
+    contract: {
+      address: contract.address,
+      signerAddress: contract.signer.address,
+      abi: contract.interface.format(),
+    },
+  };
 
-  console.log(
-    `Lock with ${ethers.utils.formatEther(
-      lockedAmount
-    )}ETH and unlock timestamp ${unlockTime} deployed to ${lock.address}`
-  );
+  const content = JSON.stringify(data, null, 2);
+  await fs.writeFile(filename, content, { encoding: "utf-8" });
 }
 
 // We recommend this pattern to be able to use async/await everywhere
